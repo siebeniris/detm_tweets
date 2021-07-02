@@ -26,12 +26,12 @@ from utils import nearest_neighbors, get_topic_coherence
 parser = argparse.ArgumentParser(description='The Embedded Topic Model')
 
 ### data and file related arguments
-parser.add_argument('--dataset', type=str, default='un', help='name of corpus')
-parser.add_argument('--data_path', type=str, default='un/', help='directory containing data')
-parser.add_argument('--emb_path', type=str, default='skipgram/embeddings.txt', help='directory containing embeddings')
-parser.add_argument('--save_path', type=str, default='./results', help='path to save results')
+parser.add_argument('--dataset', type=str, default='twitter', help='name of corpus')
+parser.add_argument('--data_path', type=str, default='/home/yiyi/nlp_tm/preprocessed_data/', help='directory containing data')
+parser.add_argument('--emb_path', type=str, default='/home/yiyi/nlp_tm/preprocessed_data/embeddings.txt', help='directory containing embeddings')
+parser.add_argument('--save_path', type=str, default='/home/yiyi/nlp_tm/results', help='path to save results')
 parser.add_argument('--batch_size', type=int, default=1000, help='number of documents in a batch for training')
-parser.add_argument('--min_df', type=int, default=100, help='to get the right data..minimum document frequency')
+parser.add_argument('--min_df', type=int, default=10, help='to get the right data..minimum document frequency')
 
 ### model-related arguments
 parser.add_argument('--num_topics', type=int, default=50, help='number of topics')
@@ -71,6 +71,7 @@ args = parser.parse_args()
 
 pca = PCA(n_components=2)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print('device:',  device)
 
 ## set seed
 np.random.seed(args.seed)
@@ -80,7 +81,8 @@ torch.manual_seed(args.seed)
 ## get data
 # 1. vocabulary
 print('Getting vocabulary ...')
-data_file = os.path.join(args.data_path, 'min_df_{}'.format(args.min_df))
+# data_file = os.path.join(args.data_path, 'min_df_{}'.format(args.min_df))
+data_file = os.path.join(args.data_path)
 vocab, train, valid, test = data.get_data(data_file, temporal=True)
 vocab_size = len(vocab)
 args.vocab_size = vocab_size
@@ -159,13 +161,13 @@ print('=*'*100)
 if not os.path.exists(args.save_path):
     os.makedirs(args.save_path)
 
-if args.mode == 'eval':
-    ckpt = args.load_from
-else:
-    ckpt = os.path.join(args.save_path, 
-        'detm_{}_K_{}_Htheta_{}_Optim_{}_Clip_{}_ThetaAct_{}_Lr_{}_Bsz_{}_RhoSize_{}_L_{}_minDF_{}_trainEmbeddings_{}'.format(
-        args.dataset, args.num_topics, args.t_hidden_size, args.optimizer, args.clip, args.theta_act, 
-            args.lr, args.batch_size, args.rho_size, args.eta_nlayers, args.min_df, args.train_embeddings))
+# if args.mode == 'eval':
+#     ckpt = args.load_from
+# else:
+#     ckpt = os.path.join(args.save_path, 
+#         'detm_{}_K_{}_Htheta_{}_Optim_{}_Clip_{}_ThetaAct_{}_Lr_{}_Bsz_{}_RhoSize_{}_L_{}_minDF_{}_trainEmbeddings_{}'.format(
+#         args.dataset, args.num_topics, args.t_hidden_size, args.optimizer, args.clip, args.theta_act, 
+#             args.lr, args.batch_size, args.rho_size, args.eta_nlayers, args.min_df, args.train_embeddings))
 
 ## define model and optimizer
 if args.load_from != '':
@@ -259,7 +261,9 @@ def visualize():
         print('\n')
         print('#'*100)
         print('Visualize topics...')
-        times = [0, 10, 40]
+        ## 2013-2020, 8 years.
+        # times = [0,2,4,6,7 ]
+        times = [x for x in range(8)]
         topics_words = []
         for k in range(args.num_topics):
             for t in times:
@@ -271,7 +275,8 @@ def visualize():
 
         print('\n')
         print('Visualize word embeddings ...')
-        queries = ['economic', 'assembly', 'security', 'management', 'debt', 'rights',  'africa']
+#         queries = ['economic', 'assembly', 'security', 'management', 'debt', 'rights',  'africa']
+        queries = ['immigrant', 'refugee']
         try:
             embeddings = model.rho.weight  # Vocab_size x E
         except:
@@ -357,8 +362,8 @@ def get_completion_ppl(source):
                     normalized_data_batch = data_batch
 
                 eta_td = eta[times_batch.type('torch.LongTensor')]
-                theta = get_theta(eta_td, normalized_data_batch)
-                alpha_td = alpha[:, times_batch.type('torch.LongTensor'), :]
+                theta = get_theta(eta_td, normalized_data_batch).to(device)
+                alpha_td = alpha[:, times_batch.type('torch.LongTensor'), :].to(device)
                 beta = model.get_beta(alpha_td).permute(1, 0, 2)
                 loglik = theta.unsqueeze(2) * beta
                 loglik = loglik.sum(1)
@@ -483,6 +488,10 @@ if args.mode == 'train':
         val_ppl = get_completion_ppl('val')
         print('val_ppl: ', val_ppl)
         if val_ppl < best_val_ppl:
+            ckpt = os.path.join(args.save_path, 
+                'detm_{}_K_{}_Htheta_{}_Optim_{}_Clip_{}_ThetaAct_{}_Lr_{}_Bsz_{}_RhoSize_{}_L_{}_minDF_{}_trainEmbeddings_{}_val_ppl_{}_epoch_{}'.format(
+                args.dataset, args.num_topics, args.t_hidden_size, args.optimizer, args.clip, args.theta_act, 
+                    args.lr, args.batch_size, args.rho_size, args.eta_nlayers, args.min_df, args.train_embeddings, val_ppl, epoch))
             with open(ckpt, 'wb') as f:
                 torch.save(model, f)
             best_epoch = epoch
@@ -511,10 +520,12 @@ if args.mode == 'train':
         print('computing test perplexity...')
         test_ppl = get_completion_ppl('test')
 else: 
+    ckpt = args.load_from
     with open(ckpt, 'rb') as f:
         model = torch.load(f)
     model = model.to(device)
-        
+    print('device loaded :', device)
+    
     print('saving alpha...')
     with torch.no_grad():
         alpha = model.mu_q_alpha.cpu().numpy()
@@ -526,5 +537,5 @@ else:
     test_ppl = get_completion_ppl('test')
     print('computing topic coherence and topic diversity...')
     get_topic_quality()
-    print('visualizing topics and embeddings...')
-    visualize()
+    #print('visualizing topics and embeddings...')
+    #visualize()

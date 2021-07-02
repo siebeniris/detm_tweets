@@ -15,17 +15,17 @@ class DETM(nn.Module):
         super(DETM, self).__init__()
 
         ## define hyperparameters
-        self.num_topics = args.num_topics
-        self.num_times = args.num_times
+        self.num_topics = args.num_topics  # k
+        self.num_times = args.num_times  # t
         self.vocab_size = args.vocab_size
         self.t_hidden_size = args.t_hidden_size
         self.eta_hidden_size = args.eta_hidden_size
-        self.rho_size = args.rho_size
-        self.emsize = args.emb_size
-        self.enc_drop = args.enc_drop
+        self.rho_size = args.rho_size  # the size of topic embedding.
+        self.emsize = args.emb_size  # the size of word embedding
+        self.enc_drop = args.enc_drop  # encoder dropout
         self.eta_nlayers = args.eta_nlayers
         self.t_drop = nn.Dropout(args.enc_drop)
-        self.delta = args.delta
+        self.delta = args.delta # document proportion
         self.train_embeddings = args.train_embeddings
 
         self.theta_act = self.get_activation(args.theta_act)
@@ -105,6 +105,7 @@ class DETM(nn.Module):
         return kl
 
     def get_alpha(self): ## mean field
+        # (T, K, L)
         alphas = torch.zeros(self.num_times, self.num_topics, self.rho_size).to(device)
         kl_alpha = []
 

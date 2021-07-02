@@ -65,10 +65,10 @@ def text_processing(docs: List, output_dir: str = os.path.join(rootdir, 'preproc
     Preprocessing the texts: remove punctuations, remove the texts whose length are less than 2
     """
     # remove punctuations and the numbers.
-    docs = [[w.lower().replace("’", " ").replace("'", " ").replace('\ufeff', '').translate(
-        str.maketrans('', '', string.punctuation + "0123456789")) for w in docs[doc].split()] for doc in
-        range(len(docs))]
-    docs = [[w for w in docs[doc] if len(w) > 1] for doc in range(len(docs))]
+    # docs = [[w.lower().replace("’", " ").replace("'", " ").replace('\ufeff', '').translate(
+    #     str.maketrans('', '', string.punctuation + "0123456789")) for w in docs[doc].split()] for doc in
+    #     range(len(docs))]
+    # docs = [[w for w in docs[doc] if len(w) > 1] for doc in range(len(docs))] # already done.
     docs = [" ".join(docs[doc]) for doc in range(len(docs))]
 
     print('size of docs:', len(docs))
@@ -87,10 +87,11 @@ def remove_empty(in_docs, in_timestamps):
     out_docs = []
     out_timestamps = []
     for ii, doc in enumerate(in_docs):
-        if(doc!=[]):
+        if (doc != []):
             out_docs.append(doc)
             out_timestamps.append(in_timestamps[ii])
     return out_docs, out_timestamps
+
 
 def remove_by_threshold(in_docs, in_timestamps, thr):
     """
@@ -99,12 +100,13 @@ def remove_by_threshold(in_docs, in_timestamps, thr):
     out_docs = []
     out_timestamps = []
     for ii, doc in enumerate(in_docs):
-        if(len(doc)>thr):
+        if (len(doc) > thr):
             out_docs.append(doc)
             out_timestamps.append(in_timestamps[ii])
     return out_docs, out_timestamps
 
-def split_data(docs:List, timestamps:List, stops:List, min_df:int=min_df,max_df:float=0.7,
+
+def split_data(docs: List, timestamps: List, stops: List, min_df: int = min_df, max_df: float = 0.7,
                output_dir: str = os.path.join(rootdir, 'preprocessed_data')):
     """
     Create count vectorizer.
@@ -186,7 +188,7 @@ def split_data(docs:List, timestamps:List, stops:List, min_df:int=min_df,max_df:
     # write the vocabulary and timestamps
     with open(os.path.join(output_dir, 'vocab.txt'), "w") as f:
         for v in vocab:
-            f.write(v+'\n')
+            f.write(v + '\n')
 
     with open(os.path.join(output_dir, 'timestamps.txt'), "w") as f:
         for v in timestamps:
@@ -200,6 +202,7 @@ def split_data(docs:List, timestamps:List, stops:List, min_df:int=min_df,max_df:
 
     return docs_tr, docs_ts, docs_va, timestamps_tr, timestamps_ts, timestamps_va, len(vocab)
 
+
 ############# util functions ############################
 def create_list_words(in_docs):
     return [x for y in in_docs for x in y]
@@ -211,17 +214,19 @@ def create_doc_indices(in_docs):
 
 
 def create_bow(doc_indices, words, n_docs, vocab_size):
-    return sparse.coo_matrix(([1]*len(doc_indices),(doc_indices, words)), shape=(n_docs, vocab_size)).tocsr()
+    return sparse.coo_matrix(([1] * len(doc_indices), (doc_indices, words)), shape=(n_docs, vocab_size)).tocsr()
+
 
 def split_bow(bow_in, n_docs):
-    indices = [[w for w in bow_in[doc,:].indices] for doc in range(n_docs)]
-    counts = [[c for c in bow_in[doc,:].data] for doc in range(n_docs)]
+    indices = [[w for w in bow_in[doc, :].indices] for doc in range(n_docs)]
+    counts = [[c for c in bow_in[doc, :].data] for doc in range(n_docs)]
     return indices, counts
+
 
 #########################################################
 
-def get_data(docs_tr:List, docs_ts:List, docs_va:List, timestamps_tr:List,
-             timestamps_ts:List, timestamps_va:List, len_vocab:int,
+def get_data(docs_tr: List, docs_ts: List, docs_va: List, timestamps_tr: List,
+             timestamps_ts: List, timestamps_va: List, len_vocab: int,
              output_dir: str = os.path.join(rootdir, 'preprocessed_data')):
     # Split test set in 2 halves
     print('splitting test documents in 2 halves...')
@@ -279,7 +284,7 @@ def get_data(docs_tr:List, docs_ts:List, docs_va:List, timestamps_tr:List,
     bow_ts_h2 = create_bow(doc_indices_ts_h2, words_ts_h2, n_docs_ts_h2, len_vocab)
     bow_va = create_bow(doc_indices_va, words_va, n_docs_va, len_vocab)
 
-    savemat(os.path.join(output_dir, 'bow_tr_timestamps') , {'timestamps': timestamps_tr}, do_compression=True)
+    savemat(os.path.join(output_dir, 'bow_tr_timestamps'), {'timestamps': timestamps_tr}, do_compression=True)
     savemat(os.path.join(output_dir, 'bow_ts_timestamps'), {'timestamps': timestamps_ts}, do_compression=True)
     savemat(os.path.join(output_dir, 'bow_va_timestamps'), {'timestamps': timestamps_va}, do_compression=True)
 
@@ -318,9 +323,9 @@ def main(file: str = 'datasets/un-general-debates.csv', output_dir: str = os.pat
     docs = text_processing(docs)
     print(docs[:10])
 
-    docs_tr, docs_ts, docs_va, timestamps_tr, timestamps_ts, timestamps_va, len_vocab = split_data(docs,timestamps,stops)
-    get_data(docs_tr, docs_ts, docs_va, timestamps_tr, timestamps_ts, timestamps_va, len_vocab, output_dir= output_dir)
-
+    docs_tr, docs_ts, docs_va, timestamps_tr, timestamps_ts, timestamps_va, len_vocab = split_data(docs, timestamps,
+                                                                                                   stops)
+    get_data(docs_tr, docs_ts, docs_va, timestamps_tr, timestamps_ts, timestamps_va, len_vocab, output_dir=output_dir)
 
 
 if __name__ == '__main__':
