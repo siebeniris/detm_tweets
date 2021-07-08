@@ -8,31 +8,32 @@ import math
 
 from torch import nn
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+print('device:', device)
 
 class DETM(nn.Module):
     def __init__(self, args, embeddings):
         super(DETM, self).__init__()
 
         ## define hyperparameters
-        self.num_topics = args.num_topics  # k
-        self.num_times = args.num_times  # t
+        self.num_topics = args.num_topics
+        self.num_times = args.num_times
         self.vocab_size = args.vocab_size
         self.t_hidden_size = args.t_hidden_size
         self.eta_hidden_size = args.eta_hidden_size
-        self.rho_size = args.rho_size  # the size of topic embedding.
-        self.emsize = args.emb_size  # the size of word embedding
-        self.enc_drop = args.enc_drop  # encoder dropout
+        self.rho_size = args.rho_size
+        self.emsize = args.emb_size
+        self.enc_drop = args.enc_drop
         self.eta_nlayers = args.eta_nlayers
         self.t_drop = nn.Dropout(args.enc_drop)
-        self.delta = args.delta # document proportion
+        self.delta = args.delta
         self.train_embeddings = args.train_embeddings
 
         self.theta_act = self.get_activation(args.theta_act)
 
         ## define the word embedding matrix \rho
         if args.train_embeddings:
-            self.rho = nn.Linear(args.rho_size, args.vocab_size, bias=False)
+            self.rho = nn.Linear(args.rho_size, args.vocab_size, bias=False).to(device)
         else:
             num_embeddings, emsize = embeddings.size()
             rho = nn.Embedding(num_embeddings, emsize)
@@ -40,8 +41,8 @@ class DETM(nn.Module):
             self.rho = rho.weight.data.clone().float().to(device)
 
         ## define the variational parameters for the topic embeddings over time (alpha) ... alpha is K x T x L
-        self.mu_q_alpha = nn.Parameter(torch.randn(args.num_topics, args.num_times, args.rho_size))
-        self.logsigma_q_alpha = nn.Parameter(torch.randn(args.num_topics, args.num_times, args.rho_size))
+        self.mu_q_alpha = nn.Parameter(torch.randn(args.num_topics, args.num_times, args.rho_size)).to(device)
+        self.logsigma_q_alpha = nn.Parameter(torch.randn(args.num_topics, args.num_times, args.rho_size)).to(device)
     
         ## define variational distribution for \theta_{1:D} via amortizartion... theta is K x D
         self.q_theta = nn.Sequential(
@@ -49,15 +50,15 @@ class DETM(nn.Module):
                     self.theta_act,
                     nn.Linear(args.t_hidden_size, args.t_hidden_size),
                     self.theta_act,
-                )
-        self.mu_q_theta = nn.Linear(args.t_hidden_size, args.num_topics, bias=True)
-        self.logsigma_q_theta = nn.Linear(args.t_hidden_size, args.num_topics, bias=True)
+                ).to(device)
+        self.mu_q_theta = nn.Linear(args.t_hidden_size, args.num_topics, bias=True).to(device)
+        self.logsigma_q_theta = nn.Linear(args.t_hidden_size, args.num_topics, bias=True).to(device)
 
         ## define variational distribution for \eta via amortizartion... eta is K x T
-        self.q_eta_map = nn.Linear(args.vocab_size, args.eta_hidden_size)
-        self.q_eta = nn.LSTM(args.eta_hidden_size, args.eta_hidden_size, args.eta_nlayers, dropout=args.eta_dropout)
-        self.mu_q_eta = nn.Linear(args.eta_hidden_size+args.num_topics, args.num_topics, bias=True)
-        self.logsigma_q_eta = nn.Linear(args.eta_hidden_size+args.num_topics, args.num_topics, bias=True)
+        self.q_eta_map = nn.Linear(args.vocab_size, args.eta_hidden_size).to(device)
+        self.q_eta = nn.LSTM(args.eta_hidden_size, args.eta_hidden_size, args.eta_nlayers, dropout=args.eta_dropout).to(device)
+        self.mu_q_eta = nn.Linear(args.eta_hidden_size+args.num_topics, args.num_topics, bias=True).to(device)
+        self.logsigma_q_eta = nn.Linear(args.eta_hidden_size+args.num_topics, args.num_topics, bias=True).to(device)
 
     def get_activation(self, act):
         if act == 'tanh':
@@ -105,7 +106,6 @@ class DETM(nn.Module):
         return kl
 
     def get_alpha(self): ## mean field
-        # (T, K, L)
         alphas = torch.zeros(self.num_times, self.num_topics, self.rho_size).to(device)
         kl_alpha = []
 
@@ -126,6 +126,7 @@ class DETM(nn.Module):
         return alphas, kl_alpha.sum()
 
     def get_eta(self, rnn_inp): ## structured amortized inference
+        rnn_inp = rnn_inp.to(device)
         inp = self.q_eta_map(rnn_inp).unsqueeze(1)
         hidden = self.init_hidden()
         output, _ = self.q_eta(inp, hidden)
@@ -159,7 +160,8 @@ class DETM(nn.Module):
     def get_theta(self, eta, bows, times): ## amortized inference
         """Returns the topic proportions.
         """
-        eta_td = eta[times.type('torch.LongTensor')]
+        eta_td = eta[times.type('torch.LongTensor')].to(device)
+        bows = bows.to(device)
         inp = torch.cat([bows, eta_td], dim=1)
         q_theta = self.q_theta(inp)
         if self.enc_drop > 0:
@@ -184,6 +186,9 @@ class DETM(nn.Module):
         return beta 
 
     def get_nll(self, theta, beta, bows):
+        theta = theta.to(device)
+        beta = beta.to(device)
+        bows = bows.to(device)
         theta = theta.unsqueeze(1)
         loglik = torch.bmm(theta, beta).squeeze(1)
         loglik = loglik

@@ -5,25 +5,26 @@ import numpy as np
 import torch 
 import scipy.io
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+print('device:', device)
 
 def _fetch(path, name):
     if name == 'train':
-        token_file = os.path.join(path, 'bow_tr_tokens.mat')
-        count_file = os.path.join(path, 'bow_tr_counts.mat')
+        token_file = os.path.join(path, 'bow_tr_tokens')
+        count_file = os.path.join(path, 'bow_tr_counts')
     elif name == 'valid':
-        token_file = os.path.join(path, 'bow_va_tokens.mat')
-        count_file = os.path.join(path, 'bow_va_counts.mat')
+        token_file = os.path.join(path, 'bow_va_tokens')
+        count_file = os.path.join(path, 'bow_va_counts')
     else:
-        token_file = os.path.join(path, 'bow_ts_tokens.mat')
-        count_file = os.path.join(path, 'bow_ts_counts.mat')
+        token_file = os.path.join(path, 'bow_ts_tokens')
+        count_file = os.path.join(path, 'bow_ts_counts')
     tokens = scipy.io.loadmat(token_file)['tokens'].squeeze()
     counts = scipy.io.loadmat(count_file)['counts'].squeeze()
     if name == 'test':
-        token_1_file = os.path.join(path, 'bow_ts_h1_tokens.mat')
-        count_1_file = os.path.join(path, 'bow_ts_h1_counts.mat')
-        token_2_file = os.path.join(path, 'bow_ts_h2_tokens.mat')
-        count_2_file = os.path.join(path, 'bow_ts_h2_counts.mat')
+        token_1_file = os.path.join(path, 'bow_ts_h1_tokens')
+        count_1_file = os.path.join(path, 'bow_ts_h1_counts')
+        token_2_file = os.path.join(path, 'bow_ts_h2_tokens')
+        count_2_file = os.path.join(path, 'bow_ts_h2_counts')
         tokens_1 = scipy.io.loadmat(token_1_file)['tokens'].squeeze()
         counts_1 = scipy.io.loadmat(count_1_file)['counts'].squeeze()
         tokens_2 = scipy.io.loadmat(token_2_file)['tokens'].squeeze()
@@ -33,25 +34,25 @@ def _fetch(path, name):
 
 def _fetch_temporal(path, name):
     if name == 'train':
-        token_file = os.path.join(path, 'bow_tr_tokens.mat')
-        count_file = os.path.join(path, 'bow_tr_counts.mat')
-        time_file = os.path.join(path, 'bow_tr_timestamps.mat')
+        token_file = os.path.join(path, 'bow_tr_tokens')
+        count_file = os.path.join(path, 'bow_tr_counts')
+        time_file = os.path.join(path, 'bow_tr_timestamps')
     elif name == 'valid':
-        token_file = os.path.join(path, 'bow_va_tokens.mat')
-        count_file = os.path.join(path, 'bow_va_counts.mat')
-        time_file = os.path.join(path, 'bow_va_timestamps.mat')
+        token_file = os.path.join(path, 'bow_va_tokens')
+        count_file = os.path.join(path, 'bow_va_counts')
+        time_file = os.path.join(path, 'bow_va_timestamps')
     else:
-        token_file = os.path.join(path, 'bow_ts_tokens.mat')
-        count_file = os.path.join(path, 'bow_ts_counts.mat')
-        time_file = os.path.join(path, 'bow_ts_timestamps.mat')
+        token_file = os.path.join(path, 'bow_ts_tokens')
+        count_file = os.path.join(path, 'bow_ts_counts')
+        time_file = os.path.join(path, 'bow_ts_timestamps')
     tokens = scipy.io.loadmat(token_file)['tokens'].squeeze()
     counts = scipy.io.loadmat(count_file)['counts'].squeeze()
     times = scipy.io.loadmat(time_file)['timestamps'].squeeze()
     if name == 'test':
-        token_1_file = os.path.join(path, 'bow_ts_h1_tokens.mat')
-        count_1_file = os.path.join(path, 'bow_ts_h1_counts.mat')
-        token_2_file = os.path.join(path, 'bow_ts_h2_tokens.mat')
-        count_2_file = os.path.join(path, 'bow_ts_h2_counts.mat')
+        token_1_file = os.path.join(path, 'bow_ts_h1_tokens')
+        count_1_file = os.path.join(path, 'bow_ts_h1_counts')
+        token_2_file = os.path.join(path, 'bow_ts_h2_tokens')
+        count_2_file = os.path.join(path, 'bow_ts_h2_counts')
         tokens_1 = scipy.io.loadmat(token_1_file)['tokens'].squeeze()
         counts_1 = scipy.io.loadmat(count_1_file)['counts'].squeeze()
         tokens_2 = scipy.io.loadmat(token_2_file)['tokens'].squeeze()

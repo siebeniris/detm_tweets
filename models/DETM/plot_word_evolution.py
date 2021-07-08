@@ -3,11 +3,23 @@ import matplotlib.pyplot as plt
 import data 
 import pickle 
 import numpy as np 
+import os
+import pickle
 
-beta = scipy.io.loadmat('./beta_100.mat')['values'] ## K x T x V
+parser = argparse.ArgumentParser(description='Get confidence from centroid....')
+
+### data and file related arguments
+parser.add_argument('--num_topics', type=int, default=50, help='number of years')
+args = parser.parse_args()
+
+num_topics = args.num_topics
+input_dir = f'/home/yiyi/nlp_tm/models/DETM/k_{num_topics}'
+
+beta = scipy.io.loadmat(os.path.join(input_dir, 'beta.mat' ))['values'] ## K x T x V
 print('beta: ', beta.shape)
 
-with open('un/min_df_100/timestamps.pkl', 'rb') as f:
+
+with open('/home/yiyi/nlp_tm/preprocessed_data/timestamps.pkl', 'rb') as f:
     timelist = pickle.load(f)
 print('timelist: ', timelist)
 T = len(timelist)
@@ -16,27 +28,28 @@ print('ticks: ', ticks)
 
 ## get vocab
 data_file = 'un/min_df_100'
-vocab, train, valid, test = data.get_data(data_file, temporal=True)
+with open('/home/yiyi/nlp_tm/preprocessed_data/preprocessed_data/vocab.pkl'), 'rb') as f:
+        vocab = pickle.load(f)    
 vocab_size = len(vocab)
 
 ## plot topics 
-num_words = 10
-times = [0, 10, 40]
-num_topics = 50
-for k in range(num_topics):
-    for t in times:
-        gamma = beta[k, t, :]
-        top_words = list(gamma.argsort()[-num_words+1:][::-1])
-        topic_words = [vocab[a] for a in top_words]
-        print('Topic {} .. Time: {} ===> {}'.format(k, t, topic_words)) 
+# num_words = 10
+# times = [0, 10, 40]
+# num_topics = 50
+# for k in range(num_topics):
+#     for t in times:
+#         gamma = beta[k, t, :]
+#         top_words = list(gamma.argsort()[-num_words+1:][::-1])
+#         topic_words = [vocab[a] for a in top_words]
+#         print('Topic {} .. Time: {} ===> {}'.format(k, t, topic_words)) 
 
-print('Topic Climate Change...')
-num_words = 10
-for t in range(46):
-    gamma = beta[46, t, :]
-    top_words = list(gamma.argsort()[-num_words+1:][::-1])
-    topic_words = [vocab[a] for a in top_words]
-    print('Time: {} ===> {}'.format(t, topic_words)) 
+# print('Topic Climate Change...')
+# num_words = 10
+# for t in range(46):
+#     gamma = beta[46, t, :]
+#     top_words = list(gamma.argsort()[-num_words+1:][::-1])
+#     topic_words = [vocab[a] for a in top_words]
+#     print('Time: {} ===> {}'.format(t, topic_words)) 
 
 fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(18, 9), dpi=80, facecolor='w', edgecolor='k')
 ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8 = axes.flatten()

@@ -70,7 +70,7 @@ parser.add_argument('--tc', type=int, default=0, help='whether to compute tc or 
 args = parser.parse_args()
 
 pca = PCA(n_components=2)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
 print('device:',  device)
 
 ## set seed
