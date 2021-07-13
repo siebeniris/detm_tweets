@@ -26,3 +26,12 @@ The chosen countries: _the United Kingdom, Germany, Spain, Poland, France, Swede
 
 
 
+## Temporal Topics
+
+Top Topic Words: [link](https://github.com/siebeniris/detm_tweets/blob/master/topic_words/topic_words_10.csv)
+
+
+## Knolwedge Base
+See more details  [https://siebeniris.github.io/TemporalTopics/](https://siebeniris.github.io/TemporalTopics/)
+
+Donwload: [MigrationsKB](https://github.com/siebeniris/detm_tweets/blob/master/migrationsKB_temporal_07132021_132954.tar.xz)
